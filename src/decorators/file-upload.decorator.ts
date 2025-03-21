@@ -8,6 +8,8 @@ export interface FileFieldConfig {
   bucketName?: string;
   required?: boolean;
   maxCount?: number;
+  allowedMimeTypes?: string[];
+  maxSize?: number; // in bytes
 }
 
 export function FileUpload(fileFields: FileFieldConfig[]) {

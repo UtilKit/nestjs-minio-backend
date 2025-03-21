@@ -6,8 +6,6 @@ export interface FileFieldOptions {
   bucketName: string;
   required?: boolean;
   description?: string;
-  allowedMimeTypes?: string[];
-  maxSize?: number; // in bytes
 }
 
 export function FileField(options: FileFieldOptions) {
