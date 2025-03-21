@@ -6,12 +6,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/UtilKit/nestjs-dynamic-filter.git"
+    "url": "git+https://github.com/UtilKit/nestjs-minio-backend.git"
   },
   "bugs": {
-    "url": "https://github.com/UtilKit/nestjs-dynamic-filter/issues"
+    "url": "https://github.com/UtilKit/nestjs-minio-backend/issues"
   },
-  "homepage": "https://github.com/UtilKit/nestjs-dynamic-filter#readme",
+  "homepage": "https://github.com/UtilKit/nestjs-minio-backend#readme",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
