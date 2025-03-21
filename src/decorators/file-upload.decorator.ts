@@ -1,16 +1,8 @@
 import { applyDecorators, UseInterceptors } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { ApiConsumes } from '@nestjs/swagger';
+import { FileFieldConfig } from 'src/interfaces/file-field.interface';
 import { MinioFileInterceptor } from '../interceptors/file.interceptor';
-
-export interface FileFieldConfig {
-  name: string;
-  bucketName?: string;
-  required?: boolean;
-  maxCount?: number;
-  allowedMimeTypes?: string[];
-  maxSize?: number; // in bytes
-}
 
 export function FileUpload(fileFields: FileFieldConfig[]) {
   // Store configurations in a custom property for later use
