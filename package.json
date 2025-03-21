@@ -1,0 +1,66 @@
+{
+  "name": "nestjs-minio-backend",
+  "version": "1.0.0",
+  "description": "NestJS module for MinIO integration",
+  "author": "Mishhub",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/UtilKit/nestjs-dynamic-filter"
+  },
+  "bugs": {
+    "url": "https://github.com/UtilKit/nestjs-dynamic-filter/issues"
+  },
+  "homepage": "https://github.com/UtilKit/nestjs-dynamic-filter#readme",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "nestjs",
+    "minio",
+    "s3",
+    "object-storage",
+    "backend"
+  ],
+  "engines": {
+    "node": ">=20.15.0"
+  },
+  "scripts": {
+    "build": "rimraf dist && tsc -p tsconfig.json",
+    "watch": "tsc --watch",
+    "dev": "tsc --watch --preserveWatchOutput",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "lint": "eslint \"src/**/*.ts\" --fix",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:cov": "jest --coverage",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^11.0.12",
+    "@nestjs/core": "^11.0.12",
+    "minio": "^8.0.5",
+    "rxjs": "^7.8.2",
+    "@nestjs/mongoose": "^11.0.2",
+    "@nestjs/platform-express": "^11.0.12",
+    "@nestjs/swagger": "^11.0.7",
+    "class-validator": "^0.14.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/minio": "^7.1.1",
+    "@typescript-eslint/eslint-plugin": "^8.27.0",
+    "@typescript-eslint/parser": "^8.27.0",
+    "eslint": "^9.22.0",
+    "eslint-config-prettier": "^10.1.1",
+    "eslint-plugin-prettier": "^5.2.3",
+    "jest": "^29.7.0",
+    "rimraf": "^6.0.1",
+    "ts-jest": "^29.2.6",
+    "typescript": "^5.8.2"
+  }
+}

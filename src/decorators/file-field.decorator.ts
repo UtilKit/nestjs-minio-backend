@@ -1,0 +1,27 @@
+import { applyDecorators } from '@nestjs/common';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsOptional } from 'class-validator';
+
+export interface FileFieldOptions {
+  bucketName: string;
+  required?: boolean;
+  description?: string;
+  allowedMimeTypes?: string[];
+  maxSize?: number; // in bytes
+}
+
+export function FileField(options: FileFieldOptions) {
+  const { bucketName, required = false, description = 'File upload field' } = options;
+
+  // Store metadata on the property
+  return applyDecorators(
+    ApiProperty({
+      type: 'string',
+      format: 'binary',
+      description,
+      required,
+    }),
+    IsOptional(),
+    Reflect.metadata('fileField', { bucketName, required }),
+  );
+}
