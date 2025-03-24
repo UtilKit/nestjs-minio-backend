@@ -86,17 +86,7 @@ export class MinioService implements OnModuleInit {
       'Content-Type': file.mimetype,
     });
 
-    // If public bucket, return direct URL
-    if (this.config.buckets.public.includes(bucketName)) {
-      const endpoint = this.config.externalEndPoint || this.config.endPoint;
-      const protocol = (this.config.externalUseSSL ?? this.config.useSSL) ? 'https' : 'http';
-      return `${protocol}://${endpoint}${
-        this.config.port ? `:${this.config.port}` : ''
-      }/${bucketName}/${fileName}`;
-    } else {
-      // For private buckets, return the path only
-      return `${bucketName}/${fileName}`;
-    }
+    return `${bucketName}/${fileName}`;
   }
 
   async getPresignedUrl(bucketName: string, objectName: string): Promise<string> {
