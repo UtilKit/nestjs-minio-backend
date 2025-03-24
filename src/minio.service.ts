@@ -108,24 +108,30 @@ export class MinioService implements OnModuleInit {
       }/${bucketName}/${objectName}`;
     }
 
-    const presignedUrl = await this.minioClient.presignedGetObject(
+    // For private buckets, if external endpoint is configured, create a new client with it
+    if (this.config.externalEndPoint) {
+      const externalClient = new Minio.Client({
+        endPoint: this.config.externalEndPoint,
+        port: this.config.port,
+        useSSL: this.config.externalUseSSL ?? this.config.useSSL,
+        accessKey: this.config.accessKey,
+        secretKey: this.config.secretKey,
+        region: this.config.region,
+      });
+
+      return await externalClient.presignedGetObject(
+        bucketName,
+        objectName,
+        this.config.urlExpiryHours * 60 * 60,
+      );
+    }
+
+    // If no external endpoint, use the default client
+    return await this.minioClient.presignedGetObject(
       bucketName,
       objectName,
       this.config.urlExpiryHours * 60 * 60,
     );
-
-    // If external endpoint is configured, replace the internal endpoint with external endpoint in the URL
-    if (this.config.externalEndPoint) {
-      const urlObject = new URL(presignedUrl);
-      urlObject.protocol = (this.config.externalUseSSL ?? this.config.useSSL) ? 'https:' : 'http:';
-      urlObject.host = this.config.externalEndPoint;
-      if (this.config.port) {
-        urlObject.port = this.config.port.toString();
-      }
-      return urlObject.toString();
-    }
-
-    return presignedUrl;
   }
 
   async deleteFile(bucketName: string, objectName: string): Promise<void> {
