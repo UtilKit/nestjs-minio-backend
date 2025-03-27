@@ -2,6 +2,8 @@ import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nes
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { MinioService } from '../minio.service';
+import { Socket } from 'net';
+import { IncomingMessage, ServerResponse } from 'http';
 
 @Injectable()
 export class FileUrlTransformInterceptor implements NestInterceptor {
@@ -26,8 +28,23 @@ export class FileUrlTransformInterceptor implements NestInterceptor {
   private async transformUrls(data: any): Promise<any> {
     if (!data) return data;
 
+    // Skip processing for Node.js internal objects (HTTP, Socket, etc.)
+    if (
+      data instanceof Socket ||
+      data instanceof IncomingMessage ||
+      data instanceof ServerResponse ||
+      data.constructor?.name === 'HTTPParser'
+    ) {
+      return data;
+    }
+
     // If it's a mongoose document, convert to plain object
     const obj = data.toJSON ? data.toJSON() : data;
+
+    // Skip processing non-object data
+    if (typeof obj !== 'object' || obj === null) {
+      return obj;
+    }
 
     // Get the schema if it's a Mongoose document
     const schema = data.schema || (data.constructor && data.constructor.schema);
@@ -47,14 +64,21 @@ export class FileUrlTransformInterceptor implements NestInterceptor {
           }
         }
       }
-      // Handle nested objects recursively
-      else if (value && typeof value === 'object' && !Array.isArray(value)) {
+      // Handle nested objects recursively, but only if they're plain objects
+      else if (
+        value &&
+        typeof value === 'object' &&
+        !Array.isArray(value) &&
+        Object.getPrototypeOf(value) === Object.prototype
+      ) {
         obj[key] = await this.transformUrls(value);
       }
       // Handle arrays of objects recursively
       else if (Array.isArray(value)) {
         obj[key] = await Promise.all(
-          value.map((item) => (typeof item === 'object' ? this.transformUrls(item) : item)),
+          value.map((item) =>
+            typeof item === 'object' && item !== null ? this.transformUrls(item) : item,
+          ),
         );
       }
     }
