@@ -15,6 +15,8 @@ export interface IMinioModuleOptions {
 }
 
 export interface IMinioModuleAsyncOptions {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   useFactory: (...args: any[]) => Promise<IMinioModuleOptions> | IMinioModuleOptions;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   inject?: any[];
 }

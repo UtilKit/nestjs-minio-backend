@@ -1,4 +1,5 @@
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { Buffer } from 'buffer';
 import * as crypto from 'crypto';
 import * as Minio from 'minio';
 import { MINIO_CONFIG } from './constants';
@@ -12,7 +13,7 @@ export class MinioService implements OnModuleInit {
 
   constructor(@Inject(MINIO_CONFIG) private readonly config: IMinioModuleOptions) {}
 
-  async onModuleInit() {
+  async onModuleInit(): Promise<void> {
     this.minioClient = new Minio.Client({
       endPoint: this.config.endPoint,
       port: this.config.port,
@@ -29,7 +30,7 @@ export class MinioService implements OnModuleInit {
   // Bucket Initialization
   // =======================================================================
 
-  private async initializeBuckets() {
+  private async initializeBuckets(): Promise<void> {
     if (this.bucketInitialized) return;
 
     // Initialize private buckets

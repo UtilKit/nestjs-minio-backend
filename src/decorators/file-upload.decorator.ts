@@ -4,7 +4,7 @@ import { ApiConsumes } from '@nestjs/swagger';
 import { FileFieldConfig } from 'src/interfaces/file-field.interface';
 import { MinioFileInterceptor } from '../interceptors/file.interceptor';
 
-export function FileUpload(fileFields: FileFieldConfig[]) {
+export function FileUpload(fileFields: FileFieldConfig[]): PropertyDecorator {
   // Store configurations in a custom property for later use
   const multerFields = fileFields.map((field) => ({
     name: field.name,
@@ -15,7 +15,7 @@ export function FileUpload(fileFields: FileFieldConfig[]) {
   // Create decorator that applies both interceptors and stores metadata
   return applyDecorators(
     // Set metadata on the method
-    (target: any, key: string, descriptor: PropertyDescriptor) => {
+    (target: object, key: string, descriptor: PropertyDescriptor) => {
       // Store the file field configurations directly on the method
       Reflect.defineMetadata('fileField', fileFields, descriptor.value);
       return descriptor;

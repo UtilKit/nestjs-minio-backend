@@ -1,3 +1,5 @@
+import { Buffer } from 'buffer';
+
 export interface IFileUpload {
   fieldname: string;
   originalname: string;

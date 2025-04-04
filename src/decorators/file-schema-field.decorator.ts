@@ -4,7 +4,7 @@ export type FileSchemaFieldOptions = PropOptions & {
   bucketName?: string;
 };
 
-export function FileSchemaField(options: FileSchemaFieldOptions = {}) {
+export function FileSchemaField(options: FileSchemaFieldOptions = {}): PropertyDecorator {
   // Add a metadata marker to identify this as a file field
   const fileOptions = {
     ...(options as object),

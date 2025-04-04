@@ -1,4 +1,4 @@
-import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Logger } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { MinioService } from '../minio.service';
@@ -7,8 +7,11 @@ import { IncomingMessage, ServerResponse } from 'http';
 
 @Injectable()
 export class FileUrlTransformInterceptor implements NestInterceptor {
+  private readonly logger = new Logger(FileUrlTransformInterceptor.name);
+
   constructor(private readonly minioService: MinioService) {}
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     return next.handle().pipe(
       map(async (data) => {
@@ -25,6 +28,12 @@ export class FileUrlTransformInterceptor implements NestInterceptor {
     );
   }
 
+  /**
+   * Transforms URLs in the given data to presigned URLs using the Minio service.
+   * @param data - The data to transform.
+   * @returns The transformed data with URLs replaced by presigned URLs.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async transformUrls(data: any): Promise<any> {
     if (!data) return data;
 
@@ -60,7 +69,7 @@ export class FileUrlTransformInterceptor implements NestInterceptor {
           try {
             obj[key] = await this.minioService.getPresignedUrl(bucketName, pathParts.join('/'));
           } catch (error) {
-            console.error(`Error generating presigned URL for ${key}:`, error);
+            this.logger.error(`Error generating presigned URL for ${key}:`, error);
           }
         }
       }

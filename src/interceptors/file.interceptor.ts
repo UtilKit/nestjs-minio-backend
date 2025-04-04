@@ -4,6 +4,7 @@ import {
   Injectable,
   NestInterceptor,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { MinioService } from '../minio.service';
@@ -11,8 +12,11 @@ import { map } from 'rxjs/operators';
 
 @Injectable()
 export class MinioFileInterceptor implements NestInterceptor {
+  private readonly logger = new Logger(MinioFileInterceptor.name);
+
   constructor(private readonly minioService: MinioService) {}
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const request = context.switchToHttp().getRequest();
     const files = request.files || {};
@@ -90,6 +94,7 @@ export class MinioFileInterceptor implements NestInterceptor {
     });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async transformUrls(data: any): Promise<any> {
     if (!data) return data;
 
@@ -104,7 +109,7 @@ export class MinioFileInterceptor implements NestInterceptor {
           try {
             obj[key] = await this.minioService.getPresignedUrl(bucketName, pathParts.join('/'));
           } catch (error) {
-            console.error(`Error generating presigned URL for ${key}:`, error);
+            this.logger.error(`Error generating presigned URL for ${key}:`, error);
           }
         }
       }
@@ -113,7 +118,8 @@ export class MinioFileInterceptor implements NestInterceptor {
     return obj;
   }
 
-  private validateFile(file: any, config: any) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private validateFile(file: any, config: any): void {
     // Get validation metadata from both decorators
     const validationConfig = {
       allowedMimeTypes: config.allowedMimeTypes || [],

@@ -8,7 +8,7 @@ export interface FileFieldOptions {
   description?: string;
 }
 
-export function FileField(options: FileFieldOptions) {
+export function FileField(options: FileFieldOptions): PropertyDecorator {
   const { bucketName, required = false, description = 'File upload field' } = options;
 
   // Store metadata on the property
