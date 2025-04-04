@@ -1,4 +1,5 @@
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import * as crypto from 'crypto';
 import * as Minio from 'minio';
 import { MINIO_CONFIG } from './constants';
 import { IFileUpload } from './interfaces/file.interface';
@@ -23,6 +24,10 @@ export class MinioService implements OnModuleInit {
 
     await this.initializeBuckets();
   }
+
+  // =======================================================================
+  // Bucket Initialization
+  // =======================================================================
 
   private async initializeBuckets() {
     if (this.bucketInitialized) return;
@@ -76,6 +81,125 @@ export class MinioService implements OnModuleInit {
     this.bucketInitialized = true;
   }
 
+  // =======================================================================
+  // AWS Signature V4 Helper Methods
+  // =======================================================================
+
+  private sha256(data: string): string {
+    return crypto.createHash('sha256').update(data).digest('hex');
+  }
+
+  private hmacSha256(key: Buffer | string, data: string): Buffer {
+    return crypto.createHmac('sha256', key).update(data).digest();
+  }
+
+  private getSigningKey(
+    secretKey: string,
+    dateStamp: string,
+    region: string,
+    serviceName: string = 's3',
+  ): Buffer {
+    const kSecret = 'AWS4' + secretKey;
+    const kDate = this.hmacSha256(kSecret, dateStamp);
+    const kRegion = this.hmacSha256(kDate, region);
+    const kService = this.hmacSha256(kRegion, serviceName);
+    const kSigning = this.hmacSha256(kService, 'aws4_request');
+    return kSigning;
+  }
+
+  // Get date in YYYYMMDDTHHMMSSZ format
+  private getAmzDate(date: Date): string {
+    return date.toISOString().replace(/[:-]|\.\d{3}/g, '');
+  }
+
+  // Get date in YYYYMMDD format
+  private getDateStamp(date: Date): string {
+    return date.toISOString().slice(0, 10).replace(/-/g, '');
+  }
+
+  // =======================================================================
+  // Manual Presigned URL Calculation
+  // =======================================================================
+
+  private async calculatePresignedGetUrl(
+    endPoint: string,
+    bucketName: string,
+    objectName: string,
+    expirySeconds: number,
+  ): Promise<string> {
+    const accessKey = this.config.accessKey;
+    const secretKey = this.config.secretKey;
+    const region = this.config.region || 'us-east-1';
+    const externalHost = endPoint;
+    const port = this.config.port;
+
+    // Use host without port for signing
+    const signingHost = port ? `${externalHost}:${port}` : externalHost;
+
+    const currentDate = new Date();
+    const amzDate = this.getAmzDate(currentDate);
+    const dateStamp = this.getDateStamp(currentDate);
+    const credentialScope = `${dateStamp}/${region}/s3/aws4_request`;
+
+    // Create canonical URI - don't encode forward slashes in object name
+    const canonicalURI =
+      '/' +
+      encodeURIComponent(bucketName) +
+      '/' +
+      objectName
+        .split('/')
+        .map((segment) => encodeURIComponent(segment))
+        .join('/');
+
+    // Create query parameters in specific order
+    const params = {
+      'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
+      'X-Amz-Credential': `${accessKey}/${credentialScope}`,
+      'X-Amz-Date': amzDate,
+      'X-Amz-Expires': expirySeconds.toString(),
+      'X-Amz-SignedHeaders': 'host',
+    };
+
+    // Build canonical query string maintaining strict ordering
+    const canonicalQueryString = Object.keys(params)
+      .sort()
+      .map((key) => {
+        return `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`;
+      })
+      .join('&');
+
+    // Create canonical headers
+    const canonicalHeaders = `host:${signingHost.toLowerCase()}\n`;
+
+    // Create canonical request
+    const canonicalRequest = [
+      'GET',
+      canonicalURI,
+      canonicalQueryString,
+      canonicalHeaders,
+      'host', // signed headers
+      'UNSIGNED-PAYLOAD', // Changed from empty string hash
+    ].join('\n');
+
+    // Create string to sign
+    const stringToSign = [
+      'AWS4-HMAC-SHA256',
+      amzDate,
+      credentialScope,
+      this.sha256(canonicalRequest),
+    ].join('\n');
+
+    // Calculate signature
+    const signingKey = this.getSigningKey(secretKey, dateStamp, region);
+    const signature = this.hmacSha256(signingKey, stringToSign).toString('hex');
+
+    // Construct final URL
+    const protocol = (this.config.externalUseSSL ?? this.config.useSSL) ? 'https' : 'http';
+    const finalUrl = `${protocol}://${signingHost}${canonicalURI}?${canonicalQueryString}&X-Amz-Signature=${signature}`;
+
+    return finalUrl;
+  }
+
   async uploadFile(file: IFileUpload, bucketName: string, objectName?: string): Promise<string> {
     if (!this.bucketInitialized) {
       await this.initializeBuckets();
@@ -98,29 +222,11 @@ export class MinioService implements OnModuleInit {
       }/${bucketName}/${objectName}`;
     }
 
-    // For private buckets, if external endpoint is configured, create a new client with it
-    if (this.config.externalEndPoint) {
-      const externalClient = new Minio.Client({
-        endPoint: this.config.externalEndPoint,
-        port: this.config.port,
-        useSSL: this.config.externalUseSSL ?? this.config.useSSL,
-        accessKey: this.config.accessKey,
-        secretKey: this.config.secretKey,
-        region: this.config.region,
-      });
-
-      return await externalClient.presignedGetObject(
-        bucketName,
-        objectName,
-        this.config.urlExpiryHours * 60 * 60,
-      );
-    }
-
-    // If no external endpoint, use the default client
-    return await this.minioClient.presignedGetObject(
+    return await this.calculatePresignedGetUrl(
+      this.config.externalEndPoint || this.config.endPoint,
       bucketName,
       objectName,
-      this.config.urlExpiryHours * 60 * 60,
+      (this.config.urlExpiryHours || 1) * 60 * 60,
     );
   }
 

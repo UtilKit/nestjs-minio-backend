@@ -23,9 +23,6 @@ export class MinioFileInterceptor implements NestInterceptor {
     // Get file field config directly from the handler
     const fileFieldsConfig = Reflect.getMetadata('fileField', handler) || [];
 
-    console.log('Files received:', Object.keys(files));
-    console.log('Handler file fields config:', fileFieldsConfig);
-
     // Initialize a promise for processing files
     let fileProcessingPromise = Promise.resolve({});
 
@@ -36,21 +33,20 @@ export class MinioFileInterceptor implements NestInterceptor {
 
       if (fieldFiles && fieldFiles.length > 0) {
         const file = fieldFiles[0];
-        const bucketName = fieldConfig.bucketName || 'media-files-bucket';
+        const bucketName = fieldConfig.bucketName;
 
-        console.log(`Processing file field: ${fieldName}, bucket: ${bucketName}`);
+        if (!bucketName) {
+          throw new Error(`Bucket name is required for file field ${fieldName}`);
+        }
 
         // Chain promises for sequential processing
         fileProcessingPromise = fileProcessingPromise.then(async (processedData) => {
           try {
             this.validateFile(file, fieldConfig);
             const fileUrl = await this.minioService.uploadFile(file, bucketName);
-            console.log(`File uploaded successfully: ${fileUrl}`);
             return { ...processedData, [fieldName]: fileUrl };
           } catch (error) {
-            console.error(`Error uploading file for ${fieldName}:`, error);
             if (error instanceof BadRequestException) {
-              console.log('BadRequestException');
               throw error;
             }
             if (fieldConfig.required) {
@@ -60,7 +56,7 @@ export class MinioFileInterceptor implements NestInterceptor {
           }
         });
       } else if (fieldConfig.required) {
-        console.warn(`Required file ${fieldName} is missing`);
+        throw new Error(`Required file ${fieldName} is missing`);
       }
     }
 
@@ -118,14 +114,6 @@ export class MinioFileInterceptor implements NestInterceptor {
   }
 
   private validateFile(file: any, config: any) {
-    console.log('Validating file:', {
-      filename: file.originalname,
-      mimetype: file.mimetype,
-      size: file.size,
-      allowedTypes: config.allowedMimeTypes,
-      maxSize: config.maxSize,
-    });
-
     // Get validation metadata from both decorators
     const validationConfig = {
       allowedMimeTypes: config.allowedMimeTypes || [],
@@ -146,13 +134,6 @@ export class MinioFileInterceptor implements NestInterceptor {
       const normalizedMimetype = file.mimetype.toLowerCase();
       const normalizedAllowedTypes = validationConfig.allowedMimeTypes.map((type) =>
         type.toLowerCase(),
-      );
-
-      console.log(
-        'normalizedAllowedTypes',
-        normalizedAllowedTypes,
-        normalizedMimetype,
-        !normalizedAllowedTypes.includes(normalizedMimetype),
       );
 
       if (!normalizedAllowedTypes.includes(normalizedMimetype)) {
