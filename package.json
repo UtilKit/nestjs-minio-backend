@@ -14,6 +14,17 @@
   "homepage": "https://github.com/UtilKit/nestjs-minio-backend#readme",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "files": [
     "dist",
     "README.md",
@@ -24,7 +35,15 @@
     "minio",
     "s3",
     "object-storage",
-    "backend"
+    "backend",
+    "file-upload",
+    "storage",
+    "cloud-storage",
+    "file-management",
+    "typescript",
+    "decorators",
+    "swagger",
+    "mongoose"
   ],
   "engines": {
     "node": ">=20.15.0"

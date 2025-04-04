@@ -1,6 +1,24 @@
 # NestJS MinIO Backend
 
+[![NPM Version][npm-image]][npm-url]
+[![Downloads Stats][npm-downloads]][npm-url]
+[![License][license-image]][license-url]
+[![TypeScript][typescript-image]][typescript-url]
+[![NestJS][nestjs-image]][nestjs-url]
+[![MinIO][minio-image]][minio-url]
+
 A powerful and flexible NestJS module for integrating MinIO object storage into your NestJS applications. This package provides a seamless way to interact with MinIO, an open-source object storage service compatible with Amazon S3.
+
+## Table of Contents
+- [Features](#features)
+- [Installation](#installation)
+- [Requirements](#requirements)
+- [Quick Start](#quick-start-using-decorators)
+- [Configuration](#configuration)
+- [API Reference](#api-reference)
+- [Contributing](#contributing)
+- [License](#license)
+- [Support](#support)
 
 ## Features
 
@@ -320,19 +338,52 @@ async downloadFile(@Param('objectName') objectName: string, @Res() res: Response
 
 ## API Reference
 
-### MinioService Methods
+### Decorators
 
-- `upload(bucketName: string, objectName: string, file: Buffer): Promise<void>`
-- `download(bucketName: string, objectName: string): Promise<Buffer>`
-- `delete(bucketName: string, objectName: string): Promise<void>`
-- `getSignedUrl(bucketName: string, objectName: string, expiryInSeconds: number): Promise<string>`
-- And more...
+#### @FileUpload()
+Handles file uploads with automatic MinIO integration.
 
-For detailed API documentation, please refer to the source code and included TypeScript definitions.
+```typescript
+@FileUpload([
+  { 
+    name: string,           // Field name in the request
+    bucketName: string,     // MinIO bucket name
+    required?: boolean,     // Whether the file is required
+    maxCount?: number,      // Maximum number of files
+    maxSize?: number,       // Maximum file size in bytes
+    mimeTypes?: string[]    // Allowed MIME types
+  }
+])
+```
+
+#### @FileField()
+Swagger-ready DTO field decorator for file uploads.
+
+```typescript
+@FileField({
+  bucketName: string,       // MinIO bucket name
+  required?: boolean,       // Whether the field is required
+  description?: string      // Swagger description
+})
+```
+
+#### @FileSchemaField()
+Mongoose schema integration for file fields.
+
+```typescript
+@FileSchemaField({
+  bucketName: string,       // MinIO bucket name
+  required?: boolean        // Whether the field is required
+})
+```
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+1. Fork it ([https://github.com/UtilKit/nestjs-minio-backend/fork](https://github.com/UtilKit/nestjs-minio-backend/fork))
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -am 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Create a new Pull Request
 
 ## License
 
@@ -344,4 +395,18 @@ Mishhub
 
 ## Support
 
-If you encounter any issues or have questions, please file an issue on the GitHub repository. 
+- 📫 [GitHub Issues](https://github.com/UtilKit/nestjs-minio-backend/issues)
+- 💬 [Discord Community](https://discord.gg/your-community)
+- 📧 Email: support@example.com
+
+[npm-image]: https://img.shields.io/npm/v/nestjs-minio-backend.svg?style=flat-square
+[npm-url]: https://npmjs.org/package/nestjs-minio-backend
+[npm-downloads]: https://img.shields.io/npm/dm/nestjs-minio-backend.svg?style=flat-square
+[license-image]: https://img.shields.io/npm/l/nestjs-minio-backend.svg?style=flat-square
+[license-url]: LICENSE
+[typescript-image]: https://img.shields.io/badge/TypeScript-Ready-blue.svg?style=flat-square
+[typescript-url]: https://www.typescriptlang.org/
+[nestjs-image]: https://img.shields.io/badge/NestJS-Compatible-red.svg?style=flat-square
+[nestjs-url]: https://nestjs.com/
+[minio-image]: https://img.shields.io/badge/MinIO-Compatible-green.svg?style=flat-square
+[minio-url]: https://min.io/ 
