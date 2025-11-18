@@ -12,10 +12,40 @@ export class MinioService implements OnModuleInit {
   private bucketInitialized = false;
   constructor(@Inject(MINIO_CONFIG) private readonly config: IMinioModuleOptions) {}
 
+  /**
+   * Parses an endpoint string to extract host and port
+   * Supports formats: "host", "host:port", "host:port/path"
+   */
+  private parseEndpoint(endpoint: string): { host: string; port?: number } {
+    // Remove protocol if present
+    const cleanEndpoint = endpoint.replace(/^https?:\/\//, '');
+    
+    // Split by colon to get host and potential port
+    const parts = cleanEndpoint.split(':');
+    
+    if (parts.length === 1) {
+      // No port specified, use default based on SSL
+      return { host: parts[0] };
+    }
+    
+    // Extract port (may have path after it)
+    const portPart = parts[1].split('/')[0];
+    const port = parseInt(portPart, 10);
+    
+    if (isNaN(port)) {
+      // Invalid port, treat as hostname with colon
+      return { host: cleanEndpoint };
+    }
+    
+    return { host: parts[0], port };
+  }
+
   async onModuleInit(): Promise<void> {
+    const { host, port } = this.parseEndpoint(this.config.endPoint);
+    
     this.minioClient = new Minio.Client({
-      endPoint: this.config.endPoint,
-      port: this.config.port,
+      endPoint: host,
+      port: port,
       useSSL: this.config.useSSL,
       accessKey: this.config.accessKey,
       secretKey: this.config.secretKey,
@@ -130,11 +160,12 @@ export class MinioService implements OnModuleInit {
     const accessKey = this.config.accessKey;
     const secretKey = this.config.secretKey;
     const region = this.config.region || 'us-east-1';
-    const externalHost = endPoint;
-    const port = this.config.port;
-
-    // Use host without port for signing
-    const signingHost = port ? `${externalHost}:${port}` : externalHost;
+    
+    // Parse endpoint to get host and port
+    const { host, port } = this.parseEndpoint(endPoint);
+    
+    // Use host with port for signing (if port is specified)
+    const signingHost = port ? `${host}:${port}` : host;
 
     const currentDate = new Date();
     const amzDate = this.getAmzDate(currentDate);
@@ -215,11 +246,11 @@ export class MinioService implements OnModuleInit {
 
   async getPresignedUrl(bucketName: string, objectName: string): Promise<string> {
     if (!this.config.buckets.private.includes(bucketName)) {
+      // For public buckets, return direct URL
       const endpoint = this.config.externalEndPoint || this.config.endPoint;
       const protocol = (this.config.externalUseSSL ?? this.config.useSSL) ? 'https' : 'http';
-      return `${protocol}://${endpoint}${
-        this.config.port ? `:${this.config.port}` : ''
-      }/${bucketName}/${objectName}`;
+      // Endpoint already includes port if specified
+      return `${protocol}://${endpoint}/${bucketName}/${objectName}`;
     }
 
     return await this.calculatePresignedGetUrl(

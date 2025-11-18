@@ -1,11 +1,10 @@
 export interface IMinioModuleOptions {
-  endPoint: string;
-  port: number;
+  endPoint: string; // Format: "host" or "host:port" (e.g., "minio:9000")
   useSSL: boolean;
   accessKey: string;
   secretKey: string;
   region?: string;
-  externalEndPoint?: string;
+  externalEndPoint?: string; // Format: "host" or "host:port" (e.g., "minio.example.com:9000")
   externalUseSSL?: boolean;
   urlExpiryHours: number;
   buckets: {

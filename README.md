@@ -74,12 +74,11 @@ Create a `config/minio.config.ts` file:
 import { registerAs } from '@nestjs/config';
 
 export default registerAs('minio', () => ({
-  endPoint: process.env.MINIO_ENDPOINT || 'localhost',
+  endPoint: process.env.MINIO_ENDPOINT || 'localhost:9000', // Format: "host" or "host:port"
   externalEndPoint:
     process.env.MINIO_EXTERNAL_ENDPOINT ||
     process.env.MINIO_ENDPOINT ||
-    'localhost',
-  port: parseInt(process.env.MINIO_PORT || '9000', 10),
+    'localhost:9000', // Format: "host" or "host:port"
   useSSL: process.env.MINIO_USE_HTTPS === 'true',
   externalUseSSL: process.env.MINIO_EXTERNAL_ENDPOINT_USE_HTTPS === 'true',
   accessKey: process.env.MINIO_ACCESS_KEY || 'minioadmin',
@@ -98,8 +97,8 @@ export default registerAs('minio', () => ({
 
 Create a `.env` file in your project root:
 ```env
-MINIO_ENDPOINT=your-minio-endpoint
-MINIO_PORT=9000
+MINIO_ENDPOINT=minio:9000
+MINIO_EXTERNAL_ENDPOINT=minio.example.com:9000
 MINIO_USE_HTTPS=false
 MINIO_ACCESS_KEY=your-access-key
 MINIO_SECRET_KEY=your-secret-key
@@ -229,8 +228,7 @@ The module accepts the following configuration options:
 ```typescript
 interface IMinioModuleOptions {
   // Required options
-  endPoint: string;          // MinIO server endpoint
-  port: number;             // MinIO server port
+  endPoint: string;          // MinIO server endpoint (format: "host" or "host:port", e.g., "minio:9000")
   useSSL: boolean;          // Whether to use SSL for connection
   accessKey: string;        // MinIO access key
   secretKey: string;        // MinIO secret key
@@ -238,7 +236,7 @@ interface IMinioModuleOptions {
 
   // Optional options
   region?: string;          // MinIO region
-  externalEndPoint?: string; // External endpoint for public access
+  externalEndPoint?: string; // External endpoint for public access (format: "host" or "host:port")
   externalUseSSL?: boolean; // Whether to use SSL for external endpoint
 
   // Bucket configuration
@@ -253,8 +251,7 @@ interface IMinioModuleOptions {
 
 ```typescript
 const minioConfig: IMinioModuleOptions = {
-  endPoint: 'minio.example.com',
-  port: 9000,
+  endPoint: 'minio.example.com:9000', // Port included in endpoint
   useSSL: false,
   accessKey: 'your-access-key',
   secretKey: 'your-secret-key',
@@ -262,7 +259,7 @@ const minioConfig: IMinioModuleOptions = {
   
   // Optional settings
   region: 'us-east-1',
-  externalEndPoint: 'public.minio.example.com',
+  externalEndPoint: 'public.minio.example.com:9000', // Port included in endpoint
   externalUseSSL: true,
   
   // Bucket configuration
@@ -283,8 +280,7 @@ const minioConfig: IMinioModuleOptions = {
 
 ```env
 # Required settings
-MINIO_ENDPOINT=minio.example.com
-MINIO_PORT=9000
+MINIO_ENDPOINT=minio:9000
 MINIO_USE_HTTPS=false
 MINIO_ACCESS_KEY=your-access-key
 MINIO_SECRET_KEY=your-secret-key
@@ -292,7 +288,7 @@ MINIO_URL_EXPIRY_HOURS=2
 
 # Optional settings
 MINIO_REGION=us-east-1
-MINIO_EXTERNAL_ENDPOINT=public.minio.example.com
+MINIO_EXTERNAL_ENDPOINT=minio.example.com:9000
 MINIO_EXTERNAL_ENDPOINT_USE_HTTPS=true
 
 # Bucket configuration
