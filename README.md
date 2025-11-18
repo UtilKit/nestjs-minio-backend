@@ -33,6 +33,7 @@ A powerful and flexible NestJS module for integrating MinIO object storage into 
 - 🎯 TypeScript support
 - 📝 Swagger documentation support
 - 🔄 RxJS integration
+- 🧩 Optional `@nestjs/mongoose` integration (only required if you use `@FileSchemaField`)
 - 🤖 Automatic presigned URL detection even for raw QueryBuilder results
 
 ## Installation
@@ -219,6 +220,7 @@ These decorators provide:
 - 🔄 Seamless MongoDB integration
 - 🤖 Automatic presigned URL generation even for raw QueryBuilder objects (bucket names are auto-detected from your MinIO config)
 - 🎯 Type safety with TypeScript
+- 🧩 Optional Mongoose dependency (install `@nestjs/mongoose` only if you plan to use `@FileSchemaField`)
 
 ## Configuration
 

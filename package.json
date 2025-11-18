@@ -1,6 +1,6 @@
 {
   "name": "nestjs-minio-backend",
-  "version": "1.0.14",
+  "version": "1.0.16",
   "description": "NestJS module for MinIO integration",
   "author": "Mishhub",
   "license": "MIT",
@@ -64,10 +64,15 @@
     "@nestjs/core": "^10.0.0 || ^11.0.0",
     "@nestjs/mongoose": "^10.0.0 || ^11.0.0",
     "@nestjs/platform-express": "^10.0.0 || ^11.0.0",
-    "@nestjs/swagger": "^8.0.0",
+    "@nestjs/swagger": "^8.0.0 || ^11.0.0",
     "class-validator": "^0.14.1",
     "minio": "^8.0.5",
     "rxjs": "^7.8.1"
+  },
+  "peerDependenciesMeta": {
+    "@nestjs/mongoose": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
