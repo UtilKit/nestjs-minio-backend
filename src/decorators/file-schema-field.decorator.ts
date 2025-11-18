@@ -1,17 +1,15 @@
+import { applyDecorators } from '@nestjs/common';
 import { Prop, PropOptions } from '@nestjs/mongoose';
+import { FileColumn, FileColumnOptions } from './file-column.decorator';
 
-export type FileSchemaFieldOptions = PropOptions & {
-  bucketName?: string;
-};
+export type FileSchemaFieldOptions = PropOptions & FileColumnOptions;
 
 export function FileSchemaField(options: FileSchemaFieldOptions = {}): PropertyDecorator {
-  // Add a metadata marker to identify this as a file field
   const fileOptions = {
     ...(options as object),
     isFileField: true,
     bucketName: options.bucketName || 'media-files-bucket',
   };
 
-  // Use the standard Prop decorator with our custom metadata
-  return Prop(fileOptions);
+  return applyDecorators(FileColumn(options), Prop(fileOptions));
 }

@@ -10,7 +10,6 @@ import { IMinioModuleOptions } from './interfaces/minio-options.interface';
 export class MinioService implements OnModuleInit {
   private minioClient: Minio.Client;
   private bucketInitialized = false;
-
   constructor(@Inject(MINIO_CONFIG) private readonly config: IMinioModuleOptions) {}
 
   async onModuleInit(): Promise<void> {

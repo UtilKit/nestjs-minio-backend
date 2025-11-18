@@ -27,11 +27,13 @@ A powerful and flexible NestJS module for integrating MinIO object storage into 
   - `@FileUpload()` - Handles multiple file uploads with built-in validation
   - `@FileField()` - Swagger-ready DTO field decorator
   - `@FileSchemaField()` - Mongoose schema integration for file fields
+- 🗃️ `@FileColumn()` decorator for TypeORM or any class-based model
 - 📁 Complete MinIO operations support (upload, download, delete, etc.)
 - 🔧 Configurable module options
 - 🎯 TypeScript support
 - 📝 Swagger documentation support
 - 🔄 RxJS integration
+- 🤖 Automatic presigned URL detection even for raw QueryBuilder results
 
 ## Installation
 
@@ -176,7 +178,26 @@ export class UserController {
 }
 ```
 
-4. (Optional) Add file fields to your Mongoose schema:
+4. (Optional) Add file fields to your persistence models:
+
+### TypeORM example
+
+```typescript
+import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { FileColumn } from 'nestjs-minio-backend';
+
+@Entity()
+export class User {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @FileColumn({ bucketName: 'profiles' })
+  @Column({ nullable: true })
+  avatar?: string; // Stores the MinIO object path (bucket/objectName)
+}
+```
+
+### Mongoose example
 
 ```typescript
 import { FileSchemaField } from 'nestjs-minio-backend';
@@ -196,6 +217,7 @@ These decorators provide:
 - 📝 Automatic Swagger documentation
 - ✅ Built-in validation
 - 🔄 Seamless MongoDB integration
+- 🤖 Automatic presigned URL generation even for raw QueryBuilder objects (bucket names are auto-detected from your MinIO config)
 - 🎯 Type safety with TypeScript
 
 ## Configuration
@@ -368,12 +390,21 @@ Swagger-ready DTO field decorator for file uploads.
 ```
 
 #### @FileSchemaField()
-Mongoose schema integration for file fields.
+Mongoose schema integration for file fields (wraps `@Prop` plus `@FileColumn` metadata).
 
 ```typescript
 @FileSchemaField({
   bucketName: string,       // MinIO bucket name
   required?: boolean        // Whether the field is required
+})
+```
+
+#### @FileColumn()
+Database-agnostic decorator for marking entity properties that store MinIO object references. Works with TypeORM, Mongoose, or any class-based model.
+
+```typescript
+@FileColumn({
+  bucketName?: string        // Optionally enforce a specific bucket
 })
 ```
 

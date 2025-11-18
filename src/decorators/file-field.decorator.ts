@@ -1,6 +1,7 @@
 import { applyDecorators } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsOptional } from 'class-validator';
+import { FileColumn } from './file-column.decorator';
 
 export interface FileFieldOptions {
   bucketName: string;
@@ -13,6 +14,7 @@ export function FileField(options: FileFieldOptions): PropertyDecorator {
 
   // Store metadata on the property
   return applyDecorators(
+    FileColumn({ bucketName }),
     ApiProperty({
       type: 'string',
       format: 'binary',

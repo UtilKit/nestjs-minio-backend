@@ -1,7 +1,7 @@
 import { applyDecorators, UseInterceptors } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { ApiConsumes } from '@nestjs/swagger';
-import { FileFieldConfig } from 'src/interfaces/file-field.interface';
+import { FileFieldConfig } from '../interfaces/file-field.interface';
 import { MinioFileInterceptor } from '../interceptors/file.interceptor';
 
 export function FileUpload(fileFields: FileFieldConfig[]): PropertyDecorator {
