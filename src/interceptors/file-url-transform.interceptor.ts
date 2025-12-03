@@ -4,7 +4,6 @@ import { map } from 'rxjs/operators';
 import { MinioService } from '../minio.service';
 import { Socket } from 'net';
 import { IncomingMessage, ServerResponse } from 'http';
-import { MINIO_FILE_FIELD_METADATA } from '../constants';
 
 @Injectable()
 export class FileUrlTransformInterceptor implements NestInterceptor {
@@ -31,6 +30,7 @@ export class FileUrlTransformInterceptor implements NestInterceptor {
 
   /**
    * Transforms URLs in the given data to presigned URLs using the Minio service.
+   * Only processes strings that start with minio:// prefix.
    * @param data - The data to transform.
    * @returns The transformed data with URLs replaced by presigned URLs.
    */
@@ -63,24 +63,14 @@ export class FileUrlTransformInterceptor implements NestInterceptor {
       return obj;
     }
 
-    // Get the schema if it's a Mongoose document
-    const schema = data.schema || (data.constructor && data.constructor.schema);
-
     // Process each property recursively
     for (const [key, value] of Object.entries(obj)) {
-      // Check if this field is decorated with FileSchemaField or FileColumn
-      const isFileField =
-        schema?.paths?.[key]?.options?.isFileField ||
-        this.hasFileFieldMetadata(data, key) ||
-        this.hasFileFieldMetadata(obj, key);
-
-      const inferredPath = !isFileField ? this.extractMinioPath(value) : null;
-
-      if ((isFileField || inferredPath) && typeof value === 'string') {
-        const split = inferredPath ?? this.splitBucketAndObject(value);
-        if (split) {
+      // Only process strings that start with minio:// prefix
+      if (typeof value === 'string' && value.startsWith('minio://')) {
+        const minioPath = this.minioService.parseMinioUrl(value);
+        if (minioPath) {
           try {
-            obj[key] = await this.minioService.getPresignedUrl(split.bucketName, split.objectName);
+            obj[key] = await this.minioService.getPresignedUrl(minioPath.bucketName, minioPath.objectName);
           } catch (error) {
             this.logger.error(`Error generating presigned URL for ${key}:`, error);
           }
@@ -107,42 +97,4 @@ export class FileUrlTransformInterceptor implements NestInterceptor {
     return obj;
   }
 
-  private hasFileFieldMetadata(target: unknown, propertyKey: string): boolean {
-    if (!target) return false;
-
-    const directMetadata = Reflect.getMetadata(MINIO_FILE_FIELD_METADATA, target, propertyKey);
-    if (directMetadata) {
-      return true;
-    }
-
-    const prototype = typeof target === 'object' ? Object.getPrototypeOf(target) : undefined;
-    if (!prototype) {
-      return false;
-    }
-
-    return Boolean(Reflect.getMetadata(MINIO_FILE_FIELD_METADATA, prototype, propertyKey));
-  }
-
-  private extractMinioPath(value: unknown): { bucketName: string; objectName: string } | null {
-    if (typeof value !== 'string') {
-      return null;
-    }
-
-    const split = this.splitBucketAndObject(value);
-    return split;
-  }
-
-  private splitBucketAndObject(value: string): { bucketName: string; objectName: string } | null {
-    if (!value.includes('/')) {
-      return null;
-    }
-    const [bucketName, ...pathParts] = value.split('/');
-    if (!bucketName || pathParts.length === 0) {
-      return null;
-    }
-    return {
-      bucketName,
-      objectName: pathParts.join('/'),
-    };
-  }
 }

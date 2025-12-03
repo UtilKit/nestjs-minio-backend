@@ -98,16 +98,16 @@ export class MinioFileInterceptor implements NestInterceptor {
   private async transformUrls(data: any): Promise<any> {
     if (!data) return data;
 
-    // // If it's a plain object (not a mongoose document), process it directly
+    // If it's a plain object (not a mongoose document), process it directly
     const obj = data.toJSON ? await data.toJSON() : data;
 
-    // Transform all fields that look like Minio paths (bucket-name/path)
+    // Transform all fields that start with minio:// prefix
     for (const [key, value] of Object.entries(obj)) {
-      if (typeof value === 'string' && value.includes('/')) {
-        const [bucketName, ...pathParts] = value.split('/');
-        if (pathParts.length > 0) {
+      if (typeof value === 'string' && value.startsWith('minio://')) {
+        const minioPath = this.minioService.parseMinioUrl(value);
+        if (minioPath) {
           try {
-            obj[key] = await this.minioService.getPresignedUrl(bucketName, pathParts.join('/'));
+            obj[key] = await this.minioService.getPresignedUrl(minioPath.bucketName, minioPath.objectName);
           } catch (error) {
             this.logger.error(`Error generating presigned URL for ${key}:`, error);
           }

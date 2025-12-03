@@ -241,7 +241,8 @@ export class MinioService implements OnModuleInit {
       'Content-Type': file.mimetype,
     });
 
-    return `${bucketName}/${fileName}`;
+    // Return minio:// format for explicit identification
+    return `minio://${bucketName}/${fileName}`;
   }
 
   async getPresignedUrl(bucketName: string, objectName: string): Promise<string> {
@@ -261,11 +262,61 @@ export class MinioService implements OnModuleInit {
     );
   }
 
-  async deleteFile(bucketName: string, objectName: string): Promise<void> {
+  /**
+   * Deletes a file from MinIO
+   * @param bucketName - Bucket name or minio:// URL
+   * @param objectName - Object name (optional if first param is minio:// URL)
+   * @returns Promise that resolves when file is deleted
+   */
+  async deleteFile(bucketName: string, objectName?: string): Promise<void> {
+    // If bucketName is a minio:// URL, parse it
+    if (bucketName.startsWith('minio://')) {
+      const parsed = this.parseMinioUrl(bucketName);
+      if (!parsed) {
+        throw new Error(`Invalid minio:// URL: ${bucketName}`);
+      }
+      await this.minioClient.removeObject(parsed.bucketName, parsed.objectName);
+      return;
+    }
+
+    // Otherwise, use bucketName and objectName as separate parameters
+    if (!objectName) {
+      throw new Error('objectName is required when bucketName is not a minio:// URL');
+    }
     await this.minioClient.removeObject(bucketName, objectName);
   }
 
   getMinioClient(): Minio.Client {
     return this.minioClient;
+  }
+
+  /**
+   * Parses a minio:// URL to extract bucket name and object name
+   * @param minioUrl - URL in format minio://bucket-name/object-path
+   * @returns Object with bucketName and objectName, or null if invalid
+   */
+  parseMinioUrl(minioUrl: string): { bucketName: string; objectName: string } | null {
+    if (!minioUrl || typeof minioUrl !== 'string') {
+      return null;
+    }
+
+    if (!minioUrl.startsWith('minio://')) {
+      return null;
+    }
+
+    const path = minioUrl.substring(8); // Remove 'minio://' prefix
+    if (!path.includes('/')) {
+      return null;
+    }
+
+    const [bucketName, ...pathParts] = path.split('/');
+    if (!bucketName || pathParts.length === 0) {
+      return null;
+    }
+
+    return {
+      bucketName,
+      objectName: pathParts.join('/'),
+    };
   }
 }
