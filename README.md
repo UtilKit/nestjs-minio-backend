@@ -11,6 +11,7 @@ A powerful and flexible NestJS module for integrating MinIO object storage into 
 
 ## Table of Contents
 - [Features](#features)
+- [Migration Guide (v1.x → v2.0.0)](#migration-guide-v1x--v200)
 - [Installation](#installation)
 - [Requirements](#requirements)
 - [Quick Start](#quick-start-using-decorators)
@@ -35,6 +36,91 @@ A powerful and flexible NestJS module for integrating MinIO object storage into 
 - 🔄 RxJS integration
 - 🧩 Optional `@nestjs/mongoose` integration (only required if you use `@FileSchemaField`)
 - 🤖 Automatic presigned URL detection even for raw QueryBuilder results
+- 🔒 Explicit `minio://` prefix format for safe URL transformation
+
+## Migration Guide (v1.x → v2.0.0)
+
+### ⚠️ Breaking Changes
+
+**File Path Format Change**: Starting from v2.0.0, all file paths are stored in `minio://bucket-name/file-path` format instead of `bucket-name/file-path`.
+
+#### What Changed?
+
+- `uploadFile()` now returns `minio://bucket/file` format
+- Only strings starting with `minio://` are automatically transformed to presigned URLs
+- This prevents accidental transformation of other URLs (like `otpauth://`, `http://`, `https://`, etc.)
+- Removed backward compatibility with `bucket/file` format
+
+#### Why This Change?
+
+The previous version had an issue where any string containing a `/` character could be incorrectly identified as a MinIO path, causing unwanted URL transformations. For example, OTP URLs like `otpauth://totp/NodeLink:user?secret=...` were being incorrectly transformed.
+
+The new `minio://` prefix ensures:
+- ✅ **Explicit identification**: Only intentionally marked file paths are transformed
+- ✅ **Safety**: Other URLs remain untouched
+- ✅ **Clarity**: Developers can clearly see which fields are MinIO file references
+
+#### Migration Steps
+
+1. **Update your database**: Migrate existing file paths from `bucket/file` to `minio://bucket/file`
+
+   ```sql
+   -- Example SQL migration (adjust for your database)
+   -- PostgreSQL
+   UPDATE users SET avatar = CONCAT('minio://', avatar) WHERE avatar NOT LIKE 'minio://%' AND avatar LIKE '%/%';
+   
+   -- MySQL
+   UPDATE users SET avatar = CONCAT('minio://', avatar) WHERE avatar NOT LIKE 'minio://%' AND avatar LIKE '%/%';
+   
+   -- MongoDB
+   db.users.updateMany(
+     { avatar: { $exists: true, $not: /^minio:\/\// } },
+     [{ $set: { avatar: { $concat: ["minio://", "$avatar"] } } }]
+   );
+   ```
+
+2. **Update your code**: If you manually construct file paths, use `minio://` prefix:
+
+   ```typescript
+   // Before (v1.x)
+   const filePath = `${bucketName}/${fileName}`;
+   
+   // After (v2.0.0)
+   const filePath = `minio://${bucketName}/${fileName}`;
+   ```
+
+3. **Delete operations**: The `deleteFile()` method now accepts both formats for easier migration:
+
+   ```typescript
+   // Both work:
+   await minioService.deleteFile('minio://bucket/file');
+   await minioService.deleteFile('bucket', 'file');
+   ```
+
+4. **Manual file path construction**: If you're building file paths manually:
+
+   ```typescript
+   // Before (v1.x)
+   const storedPath = await minioService.uploadFile(file, 'my-bucket');
+   // Returns: "my-bucket/file-name.jpg"
+   
+   // After (v2.0.0)
+   const storedPath = await minioService.uploadFile(file, 'my-bucket');
+   // Returns: "minio://my-bucket/file-name.jpg"
+   ```
+
+#### Benefits
+
+- ✅ **No more accidental URL transformations**: Other URLs (OTP, HTTP, etc.) are never touched
+- ✅ **Explicit file path identification**: Clear distinction between MinIO paths and other URLs
+- ✅ **Works seamlessly with query builders**: Automatic transformation still works for nested objects
+- ✅ **Better type safety**: Clearer intent in your codebase
+
+#### Need Help?
+
+If you encounter any issues during migration, please:
+- Open an issue on [GitHub](https://github.com/UtilKit/nestjs-minio-backend/issues)
+- Check the [CHANGELOG.md](./CHANGELOG.md) for detailed changes
 
 ## Installation
 
@@ -193,7 +279,7 @@ export class User {
 
   @FileColumn({ bucketName: 'profiles' })
   @Column({ nullable: true })
-  avatar?: string; // Stores the MinIO object path (bucket/objectName)
+  avatar?: string; // Stores the MinIO object path (minio://bucket/objectName)
 }
 ```
 
@@ -208,7 +294,7 @@ export class User {
     bucketName: 'profiles',
     required: true
   })
-  avatar: string; // Automatically stores the MinIO object URL
+  avatar: string; // Automatically stores the MinIO object path (minio://bucket/objectName)
 }
 ```
 
@@ -217,7 +303,7 @@ These decorators provide:
 - 📝 Automatic Swagger documentation
 - ✅ Built-in validation
 - 🔄 Seamless MongoDB integration
-- 🤖 Automatic presigned URL generation even for raw QueryBuilder objects (bucket names are auto-detected from your MinIO config)
+- 🤖 Automatic presigned URL generation even for raw QueryBuilder objects (only for strings starting with `minio://`)
 - 🎯 Type safety with TypeScript
 - 🧩 Optional Mongoose dependency (install `@nestjs/mongoose` only if you plan to use `@FileSchemaField`)
 
